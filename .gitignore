@@ -1,0 +1,31 @@
+# Terraform state & directories
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraformrc
+terraform.rc
+
+# Secrets & local tfvars (keep example and non-secret dev defaults)
+*.tfvars
+!terraform.tfvars.example
+!environments/dev/terraform.tfvars
+.env
+.env.*
+
+# Node.js
+node_modules/
+npm-debug.log*
+coverage/
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
