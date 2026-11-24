@@ -1,0 +1,17 @@
+{
+  "name": "ha-notes-api",
+  "version": "1.0.0",
+  "description": "Multi-Region High Availability Notes & RPO Write-Tracker API",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js",
+    "test": "node --test test/*.test.js"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "fastify": "^5.2.0",
+    "pg": "^8.13.1"
+  }
+}
