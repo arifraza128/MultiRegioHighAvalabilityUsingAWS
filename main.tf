@@ -156,3 +156,82 @@ module "arc" {
   secondary_alb_zone_id  = var.enable_secondary_region ? module.ecs_secondary[0].alb_zone_id : ""
   domain_name            = var.custom_domain_name != "" ? var.custom_domain_name : "ha-notes.internal"
 }
+
+# -----------------------------------------------------------------------------
+# Phase 7: Regional Monitoring, Dashboards & SNS Alerting (Both Regions!)
+# -----------------------------------------------------------------------------
+module "monitoring_primary" {
+  count  = var.enable_monitoring ? 1 : 0
+  source = "./modules/monitoring"
+  providers = {
+    aws = aws.primary
+  }
+
+  project_name            = var.project_name
+  environment             = var.environment
+  logs_kms_key_arn        = module.network_primary.logs_kms_key_arn
+  alb_arn_suffix          = module.ecs_primary.alb_arn_suffix
+  target_group_arn_suffix = module.ecs_primary.target_group_arn_suffix
+  ecs_cluster_name        = module.ecs_primary.ecs_cluster_name
+  ecs_service_name        = module.ecs_primary.ecs_service_name
+  db_cluster_identifier   = var.enable_aurora_global ? module.aurora_global[0].primary_cluster_identifier : ""
+  is_primary_region       = true
+  alert_email             = var.alert_email
+}
+
+module "monitoring_secondary" {
+  count  = var.enable_monitoring && var.enable_secondary_region ? 1 : 0
+  source = "./modules/monitoring"
+  providers = {
+    aws = aws.secondary
+  }
+
+  project_name            = var.project_name
+  environment             = var.environment
+  logs_kms_key_arn        = module.network_secondary[0].logs_kms_key_arn
+  alb_arn_suffix          = module.ecs_secondary[0].alb_arn_suffix
+  target_group_arn_suffix = module.ecs_secondary[0].target_group_arn_suffix
+  ecs_cluster_name        = module.ecs_secondary[0].ecs_cluster_name
+  ecs_service_name        = module.ecs_secondary[0].ecs_service_name
+  db_cluster_identifier   = var.enable_aurora_global ? module.aurora_global[0].secondary_cluster_identifier : ""
+  is_primary_region       = false
+  alert_email             = var.alert_email
+}
+
+# -----------------------------------------------------------------------------
+# Phase 8: AWS FIS Chaos Experiment Templates with CloudWatch Stop Conditions
+# -----------------------------------------------------------------------------
+module "fis_primary" {
+  count  = var.enable_fis && var.enable_monitoring ? 1 : 0
+  source = "./modules/fis"
+  providers = {
+    aws = aws.primary
+  }
+
+  project_name             = var.project_name
+  environment              = var.environment
+  ecs_cluster_arn          = module.ecs_primary.ecs_cluster_arn
+  ecs_service_name         = module.ecs_primary.ecs_service_name
+  db_cluster_arn           = var.enable_aurora_global ? module.aurora_global[0].primary_cluster_arn : ""
+  stop_condition_alarm_arn = module.monitoring_primary[0].fis_stop_condition_alarm_arn
+  logs_kms_key_arn         = module.network_primary.logs_kms_key_arn
+}
+
+# -----------------------------------------------------------------------------
+# Phase 9: AWS Step Functions Automated Zero-RPO Failback State Machine
+# Hosted in Secondary Region (ap-south-1) so it survives a primary outage!
+# -----------------------------------------------------------------------------
+module "failback_orchestrator" {
+  count  = var.enable_failback_workflow && var.enable_secondary_region ? 1 : 0
+  source = "./modules/failback"
+  providers = {
+    aws = aws.secondary
+  }
+
+  project_name              = var.project_name
+  environment               = var.environment
+  global_cluster_identifier = var.enable_aurora_global ? module.aurora_global[0].global_cluster_identifier : ""
+  primary_cluster_arn       = var.enable_aurora_global ? module.aurora_global[0].primary_cluster_arn : ""
+  secondary_cluster_arn     = var.enable_aurora_global ? module.aurora_global[0].secondary_cluster_arn : ""
+  logs_kms_key_arn          = module.network_secondary[0].logs_kms_key_arn
+}

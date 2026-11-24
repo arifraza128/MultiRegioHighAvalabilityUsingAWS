@@ -100,3 +100,23 @@ output "arc_secondary_routing_control_arn" {
   description = "ARN of the Secondary Region ARC Routing Control (when enable_arc_cluster = true)"
   value       = var.enable_arc_cluster ? module.arc[0].secondary_routing_control_arn : null
 }
+
+output "primary_dashboard_name" {
+  description = "CloudWatch Dashboard name in the primary region (when enable_monitoring = true)"
+  value       = var.enable_monitoring ? module.monitoring_primary[0].dashboard_name : null
+}
+
+output "secondary_dashboard_name" {
+  description = "CloudWatch Dashboard name in the secondary region (when enable_monitoring & enable_secondary_region = true)"
+  value       = var.enable_monitoring && var.enable_secondary_region ? module.monitoring_secondary[0].dashboard_name : null
+}
+
+output "fis_ecs_task_termination_template_id" {
+  description = "AWS FIS Experiment Template ID for primary ECS task termination (when enable_fis = true)"
+  value       = var.enable_fis && var.enable_monitoring ? module.fis_primary[0].ecs_task_termination_template_id : null
+}
+
+output "failback_state_machine_arn" {
+  description = "ARN of the Step Functions Failback Orchestrator in ap-south-1 (when enable_failback_workflow = true)"
+  value       = var.enable_failback_workflow && var.enable_secondary_region ? module.failback_orchestrator[0].state_machine_arn : null
+}
