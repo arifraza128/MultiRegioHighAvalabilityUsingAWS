@@ -117,3 +117,42 @@ module "aurora_global" {
   secondary_db_subnet_ids         = var.enable_secondary_region ? module.network_secondary[0].isolated_db_subnet_ids : []
   secondary_ecs_security_group_id = var.enable_secondary_region ? module.ecs_secondary[0].ecs_tasks_security_group_id : ""
 }
+
+# -----------------------------------------------------------------------------
+# Phase 5: S3 Cross-Region Replication (CRR) + CloudFront Origin Group + ACM
+# -----------------------------------------------------------------------------
+module "storage_cdn" {
+  count  = var.enable_storage_cdn ? 1 : 0
+  source = "./modules/storage_cdn"
+  providers = {
+    aws.primary   = aws.primary
+    aws.secondary = aws.secondary
+  }
+
+  project_name       = var.project_name
+  environment        = var.environment
+  custom_domain_name = var.custom_domain_name
+}
+
+# -----------------------------------------------------------------------------
+# Phase 6: Route 53 ARC Cluster ($2.50/hr), Routing Controls & Safety Rule
+# -----------------------------------------------------------------------------
+module "arc" {
+  count  = var.enable_arc_cluster ? 1 : 0
+  source = "./modules/arc"
+  providers = {
+    aws = aws.primary
+  }
+
+  project_name           = var.project_name
+  environment            = var.environment
+  primary_region         = data.aws_region.primary.name
+  secondary_region       = data.aws_region.secondary.name
+  primary_vpc_id         = module.network_primary.vpc_id
+  secondary_vpc_id       = var.enable_secondary_region ? module.network_secondary[0].vpc_id : ""
+  primary_alb_dns_name   = module.ecs_primary.alb_dns_name
+  primary_alb_zone_id    = module.ecs_primary.alb_zone_id
+  secondary_alb_dns_name = var.enable_secondary_region ? module.ecs_secondary[0].alb_dns_name : ""
+  secondary_alb_zone_id  = var.enable_secondary_region ? module.ecs_secondary[0].alb_zone_id : ""
+  domain_name            = var.custom_domain_name != "" ? var.custom_domain_name : "ha-notes.internal"
+}

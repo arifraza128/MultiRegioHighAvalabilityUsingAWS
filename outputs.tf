@@ -70,3 +70,33 @@ output "aurora_secondary_cluster_endpoint" {
   description = "Aurora secondary cluster endpoint in ap-south-1 (when enable_aurora_global = true)"
   value       = var.enable_aurora_global ? module.aurora_global[0].secondary_cluster_endpoint : null
 }
+
+output "cloudfront_domain_name" {
+  description = "Default domain name of the CloudFront multi-region failover distribution (when enable_storage_cdn = true)"
+  value       = var.enable_storage_cdn ? module.storage_cdn[0].cloudfront_domain_name : null
+}
+
+output "s3_primary_bucket_name" {
+  description = "Name of the primary S3 static assets bucket (when enable_storage_cdn = true)"
+  value       = var.enable_storage_cdn ? module.storage_cdn[0].primary_bucket_name : null
+}
+
+output "s3_secondary_bucket_name" {
+  description = "Name of the secondary S3 replica bucket (when enable_storage_cdn = true)"
+  value       = var.enable_storage_cdn ? module.storage_cdn[0].secondary_bucket_name : null
+}
+
+output "arc_cluster_endpoints" {
+  description = "5 globally distributed Route 53 ARC cluster endpoints (when enable_arc_cluster = true)"
+  value       = var.enable_arc_cluster ? module.arc[0].arc_cluster_endpoints : null
+}
+
+output "arc_primary_routing_control_arn" {
+  description = "ARN of the Primary Region ARC Routing Control (when enable_arc_cluster = true)"
+  value       = var.enable_arc_cluster ? module.arc[0].primary_routing_control_arn : null
+}
+
+output "arc_secondary_routing_control_arn" {
+  description = "ARN of the Secondary Region ARC Routing Control (when enable_arc_cluster = true)"
+  value       = var.enable_arc_cluster ? module.arc[0].secondary_routing_control_arn : null
+}
